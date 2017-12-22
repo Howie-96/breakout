@@ -1,5 +1,5 @@
 package example
-import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.annotation._
 import org.scalajs.dom
 import org.scalajs.dom.html
 import scala.util.Random
@@ -9,7 +9,7 @@ case class Point(x: Int, y: Int){
   def /(d: Int) = Point(x / d, y / d)
 }
 
-@JSExport
+@JSExportTopLevel("ScalaJSExample")
 object ScalaJSExample {
   @JSExport
   def main(canvas: html.Canvas): Unit = {
