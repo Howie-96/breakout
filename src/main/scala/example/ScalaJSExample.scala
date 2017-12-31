@@ -10,23 +10,33 @@ import org.scalajs.dom.html.Canvas
 import org.scalajs.dom.raw.HTMLCanvasElement
 import org.scalajs.dom.ext.KeyCode
 import scala.scalajs.js.Dynamic.global
+import scala.collection.mutable.HashMap
+import scala.collection._
 
-abstract class Component{
-  val width: Int
-  val height: Int
-  val color: String
-  var x: Int
-  var y: Int
-  def createContext(width: Int,  height: Int) {
-      val canvas =  document.createElement("canvas").asInstanceOf[Canvas]
-      canvas.width = width
-      canvas.height = height
-      val retval = canvas
-   }
 
+case class Point(x: Double, y: Double){
+  def +(other: Point) = Point(x + other.x, y + other.y)
+  def -(other: Point) = Point(x - other.x, y - other.y)
+  def %(other: Point) = Point(x % other.x, y % other.y)
+  def <(other: Point) = x < other.x && y < other.y
+  def >(other: Point) = x > other.x && y > other.y
+  def /(value: Double) = Point(x / value, y / value)
+  def *(value: Double) = Point(x * value, y * value)
+  def *(other: Point) = x * other.x + y * other.y
+  def length = Math.sqrt(lengthSquared)
+  def lengthSquared = x * x + y * y
+  def within(a: Point, b: Point, extra: Point = Point(0, 0)) = {
+    import math.{min, max}
+    x >= min(a.x, b.x) - extra.x &&
+    x < max(a.x, b.x) + extra.y &&
+    y >= min(a.y, b.y) - extra.x &&
+    y < max(a.y, b.y) + extra.y
+  }
+  def rotate(theta: Double) = {
+    val (cos, sin) = (Math.cos(theta), math.sin(theta))
+    Point(cos * x - sin * y, sin * x + cos * y)
+  }
 }
-
-
 
 
 
@@ -41,7 +51,8 @@ object ScalaJSExample {
     canvas.width = 400
     canvas.height = 400
 
-   
+    
+    
     
 
     val canvas2 = document.createElement("canvas").asInstanceOf[Canvas]
@@ -54,8 +65,8 @@ object ScalaJSExample {
 
     val ctx2 = canvas2.getContext("2d")
 
-     import scala.collection.mutable.HashMap
-      val keysDown = HashMap[Int, Boolean]()
+    val keysDown = HashMap[Int, Boolean]()
+
 
      dom.window.addEventListener("keydown", (e: dom.KeyboardEvent) => {
       keysDown += e.keyCode -> true
@@ -65,6 +76,7 @@ object ScalaJSExample {
       keysDown -= e.keyCode
     }, false)
 
+
     
 
    
@@ -73,54 +85,61 @@ object ScalaJSExample {
 
 
     //vals
-    var xspeed = 3.3
-    var yspeed = 3.3
+    val BallVelocity = Point(3.3,3.3)
 
 
-    var player2x = canvas2.height / 2.0
-    var player2y = canvas2.width / 2.0
+    val BoardLocation = Point(canvas2.height/2.0,canvas2.width/2.0)
 
-    var playerY = canvas.height / 2.0
-    var playerX = canvas.width / 2.0
+    val BoardVelocity = Point(5,5)
+
+    val BallLocation = Point(canvas.height/2.0,canvas.width/2.0)
+
+    val BallSize = 10
+
+    val BoardLength = 30
+    val BoardWidth = 10
+
+    val Walls = Point(canvas.width, canvas.height)
+
+    val Origin = Point(0,0)
 
     def run() = {
-      playerX += xspeed
+   
 
-      playerY += yspeed
-
-
+      val BallNewLocation = BallVelocity + BallLocation
 
       
-      if (keysDown.contains(KeyCode.Left))  player2x -= 5
-      if(keysDown.contains(KeyCode.Right))   player2x += 5
-
-     
-
-
-    
       
 
-      for(i <- 0 to 30)
-      {
-        
-        if(playerX > canvas.width || playerX < 0 || playerX == player2x + i) {
-          xspeed *= -1
-         
+      val BoardNewLocation =  if (keysDown.contains(65))  BoardLocation - BoardVelocity
+                              else if (keysDown.contains(68)) BoardLocation + BoardVelocity
+                              else BoardLocation
+      
+
+
+      def collided(v1: Point, v2: Point) = {
+        val BoardLengthRange = List( BoardNewLocation.x to (BoardNewLocation.x + BoardLength))
+        val BoardWidthRange = List( BoardNewLocation.y to (BoardNewLocation.y + BoardWidth))
+        val CompleteRange = BoardLengthRange ++ BoardWidthRange
+
+        for(i <- CompleteRange){
+          if(BallNewLocation < Walls || BallNewLocation < Origin || BallNewLocation.x == i && BallNewLocation.y == i)
+            BallVelocity * -1
+
         }
 
         
       }
-      for(j <- 0 to 10){
 
-         if(playerY > canvas.height || playerY < 0 || playerY == player2y + j && playerX == player2x + j) yspeed *= -1
+      
     
-      }
      
+
       //animate
     
-      renderer.fillRect(playerX, playerY, 10, 10)
+      renderer.fillRect(BallNewLocation.x, BallNewLocation.y, BallSize, BallSize)
      
-      ctx2.fillRect(player2x, player2y, 30, 10)
+      ctx2.fillRect(BoardNewLocation.x, BoardNewLocation.y, BoardLength, BoardWidth)
 
 
     
